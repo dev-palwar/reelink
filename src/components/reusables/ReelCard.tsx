@@ -1,10 +1,43 @@
 import Image from "next/image";
-import DummyImage from "@/assets/dummycard.jpg";
+import { Typography } from "../ui/typography";
+import { ReelNotFound } from "../svgs/ReelNotFound";
 
-export default function ReelCard() {
+interface ReelCardProps {
+  id: number;
+  title: string;
+  original_title: string;
+  backdrop_path: string;
+  media_type: string;
+  release_date: string;
+  poster_path: string;
+}
+
+export default function ReelCard({
+  id,
+  title,
+  original_title,
+  backdrop_path,
+  media_type,
+  release_date,
+  poster_path,
+}: ReelCardProps) {
   return (
-    <div className="w-full h-full">
-      <Image src={DummyImage} alt="Dummy Image" width={100} height={100} />
-    </div>
+    <>
+      <div className="">
+        {poster_path ? (
+          <Image
+            src={`https://image.tmdb.org/t/p/w500${poster_path}`}
+            alt={original_title}
+            width={300}
+            height={300}
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex justify-center items-center">
+            <ReelNotFound />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
