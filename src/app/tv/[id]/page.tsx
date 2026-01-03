@@ -1,65 +1,57 @@
-import IconRenderer from "@/components/reusables/IconRenderer";
-import Image from "next/image";
-import {
-  getMovieCredits,
-  getMovieDetails,
-  getSimilarMovies,
-} from "@/controllers/movie";
+import { getTVDetails } from "@/controllers/tv";
+import { TVData } from "./interface";
 import { formatDate } from "@/lib/utils";
+import IconRenderer from "@/components/reusables/IconRenderer";
 import { Button } from "@/components/ui/button";
-import { MovieData, SimilarMovieData } from "./interface";
+import Image from "next/image";
 
-export default async function MoviePage({
+export default async function TVPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  const movie: MovieData = await getMovieDetails(id);
-  // const similarMovies: SimilarMovieData = await getSimilarMovies(id);
-  // const movieCredits = await getMovieCredits(id);
+  const tv: TVData = await getTVDetails(id);
 
   return (
     <div className="min-h-screen flex flex-col gap-8">
-      <MovieDetails movie={movie} />
+      <TVDetails tv={tv} />
     </div>
   );
 }
 
-function MovieDetails({ movie }: { movie: MovieData }) {
+function TVDetails({ tv }: { tv: TVData }) {
   return (
     <div className="flex justify-between">
       <div className="content flex flex-col gap-8 basis-1/2">
         <div className="flex">
           <div className="date flex items-center gap-2">
             <p className="text-sm text-foreground/70 font-medium">
-              {formatDate(movie.release_date)}
+              {formatDate(tv.first_air_date)}
             </p>
             <div className="seasons bg-primary/10 px-2 py-1">
               <p className="text-sm text-foreground/70 font-medium">
                 <span className="text-primary font-medium">
-                  {movie.runtime}
+                  {tv.number_of_seasons}
                 </span>{" "}
-                Minutes
+                Seasons
               </p>
             </div>
             <div className="status">
               <p className="text-sm text-foreground/70 font-medium">
-                {movie.status}
+                {tv.status}
               </p>
             </div>
           </div>
         </div>
-        <p className="text-7xl font-bold capitalize leading-tight">
-          {movie.title}
-        </p>
+        <p className="text-7xl font-bold capitalize leading-tight">{tv.name}</p>
 
         <div className="buttons flex items-center gap-2">
           <div className="imdb flex items-center gap-2 hover:text-yellow-500 cursor-pointer transition-all duration-300 bg-primary/10 px-2 py-1 rounded-md hover:bg-primary/20">
             <IconRenderer name="imdb" className="text-yellow-500" />
             <p className="text-sm text-foreground/70 font-medium">
-              {movie.vote_average}/10
+              {tv.vote_average}/10
             </p>
           </div>
           <Button
@@ -74,7 +66,7 @@ function MovieDetails({ movie }: { movie: MovieData }) {
         </div>
 
         <div className="generes flex items-center gap-2">
-          {movie.genres.map((genre: { id: number; name: string }) => (
+          {tv.genres.map((genre: { id: number; name: string }) => (
             <p
               key={genre.id}
               className="text-sm text-foreground/70 font-medium capitalize"
@@ -86,15 +78,15 @@ function MovieDetails({ movie }: { movie: MovieData }) {
 
         <div className="description">
           <p className="text-lg text-foreground/80 font-medium text-justify">
-            {movie.overview}
+            {tv.overview}
           </p>
         </div>
       </div>
 
       <div className="poster">
         <Image
-          src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-          alt={movie.title}
+          src={`https://image.tmdb.org/t/p/w500${tv.poster_path}`}
+          alt={tv.name}
           className="object-cover"
           width={500}
           height={500}

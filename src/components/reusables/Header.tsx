@@ -1,11 +1,7 @@
 "use client";
 
-import ModeToggle from "@/components/ui/mode-toggle";
-import { Typography } from "../ui/typography";
-import { HeartIcon } from "lucide-react";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { AiFillFire, AiOutlineFire } from "react-icons/ai";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import IconRenderer from "./IconRenderer";
@@ -35,7 +31,7 @@ export default function Header() {
             <IconRenderer name="fire-outlined" />
           </Link>
         )}
-        <ModeToggle />
+        {/* <ModeToggle /> */}
         {isLoaded && (
           <>
             {isSignedIn ? (
