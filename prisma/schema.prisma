@@ -14,8 +14,53 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
   email     String   @unique
+  name      String?
+  image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  playlists     Playlist[]
+  playlistItems PlaylistItem[]
+
+  @@index([email])
+}
+
+model Playlist {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  isDefault   Boolean  @default(false) // True for "Favorites"
+  isPublic    Boolean  @default(false)
+  coverImage  String? // Custom playlist cover
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items PlaylistItem[]
+
+  @@unique([userId, name]) // User can't have duplicate playlist names
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model PlaylistItem {
+  id         String   @id @default(cuid())
+  playlistId String
+  movieId    String
+  userId     String // To track who added it
+  position   Int // Order in playlist
+  notes      String?  @db.Text // Personal notes about the movie
+  addedAt    DateTime @default(now())
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, movieId]) // Can't add same movie twice to a playlist
+  @@index([playlistId])
+  @@index([movieId])
+  @@index([userId])
 }
