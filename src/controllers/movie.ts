@@ -1,0 +1,48 @@
+import { MovieCreditData } from "@/app/movie/[id]/interface";
+import { apiClient } from "@/lib/api-client";
+
+export const getMovieDetails = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/movie/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching movie details:", error);
+    throw error;
+  }
+};
+
+export const getSimilarMovies = async (id: string) => {
+  try {
+    const response = await apiClient.get(`/movie/${id}/similar`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching similar movies:", error);
+    throw error;
+  }
+};
+
+export const getMovieCredits = async (
+  id: string
+): Promise<MovieCreditData["cast"]> => {
+  try {
+    const response = await apiClient.get(`/movie/${id}/credits`);
+    return response.data.cast;
+  } catch (error) {
+    console.error("Error fetching movie credits:", error);
+    throw error;
+  }
+};
+
+export const getDiscoverMovies = async (page: number): Promise<any> => {
+  try {
+    const response = await apiClient.get(`/discover/movie`, {
+      params: {
+        page: page,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching discover movies:", error);
+    throw error;
+  }
+};

@@ -4,15 +4,22 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import Anya from "@/assets/anya.png";
 import Image from "next/image";
-import CardGrid from "@/components/home/card-grid";
-import ReelCard from "@/components/reusables/ReelCard";
-import axios from "axios";
+import ReelCard, { ReelCardProps } from "@/components/reusables/cards/ReelCard";
 import Loader from "@/components/reusables/Loader";
+import { getMultiSearch } from "@/controllers/multi";
+
+interface SearchResults {
+  results: ReelCardProps[];
+  total_pages: number;
+  total_results: number;
+}
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<
+    SearchResults["results"] | null
+  >(null);
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -22,27 +29,10 @@ export default function Home() {
 
   const fetchSearchResults = async () => {
     setLoading(true);
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_MOVIE_API}/search/multi`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_MOVIE_API_TOKEN}`,
-          },
-          params: {
-            query: searchQuery,
-          },
-        }
-      );
-      console.log(response.data);
-      setSearchResults(response.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setSearchResults(null);
-    } finally {
-      setLoading(false);
-    }
+    const data: SearchResults = await getMultiSearch(searchQuery);
+    console.log(data.results);
+    setSearchResults(data.results);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -69,17 +59,22 @@ export default function Home() {
         {loading ? (
           <Loader />
         ) : (
-          searchResults?.results?.map((result: any) => (
+          searchResults?.map((result) => (
             <div className="basis-48" key={result.id}>
               <ReelCard
                 key={result.id}
-                id={result.id}
-                title={result.title}
-                original_title={result.original_title}
-                backdrop_path={result.backdrop_path}
-                media_type={result.media_type}
-                release_date={result.release_date}
-                poster_path={result.poster_path}
+                data={{
+                  id: result.id,
+                  title: result.title,
+                  name: result.name,
+                  original_title: result.original_title,
+                  backdrop_path: result.backdrop_path,
+                  media_type: result.media_type,
+                  poster_path: result.poster_path,
+                  release_date: result.first_air_date
+                    ? result.first_air_date
+                    : result.release_date,
+                }}
               />
             </div>
           ))
