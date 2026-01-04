@@ -1,7 +1,7 @@
-import { MovieCreditData } from "@/app/movie/[id]/interface";
+import { MovieCreditData, MovieData } from "@/app/movie/interface";
 import { apiClient } from "@/lib/api-client";
 
-export const getMovieDetails = async (id: string) => {
+export const getMovieDetails = async (id: string): Promise<MovieData> => {
   try {
     const response = await apiClient.get(`/movie/${id}`);
     return response.data;

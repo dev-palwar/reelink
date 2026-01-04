@@ -1,3 +1,4 @@
+import { PlaylistData } from "@/app/playlists/interface";
 import { authApiClient } from "@/lib/api-client";
 
 export const createPlaylist = async (name: string) => {
@@ -32,6 +33,20 @@ export const addToPlaylist = async (playlistId: string, movieId: string) => {
     return response.data;
   } catch (error) {
     console.error("Error adding to playlist:", error);
+    throw error;
+  }
+};
+
+export const getPlaylist = async (id: string): Promise<PlaylistData> => {
+  try {
+    const response = await authApiClient.get("/api/playlist/get", {
+      params: {
+        id,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching playlist:", error);
     throw error;
   }
 };

@@ -1,13 +1,12 @@
 "use client";
 
-import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import IconRenderer from "./IconRenderer";
+import { AuthButton } from "./UserButton";
 
 export default function Header() {
-  const { isSignedIn, isLoaded } = useUser();
   const pathname = usePathname();
 
   const router = useRouter();
@@ -32,17 +31,7 @@ export default function Header() {
           </Link>
         )}
         {/* <ModeToggle /> */}
-        {isLoaded && (
-          <>
-            {isSignedIn ? (
-              <UserButton afterSignOutUrl="/" />
-            ) : (
-              <SignInButton mode="modal">
-                <Button variant="outline">Sign In</Button>
-              </SignInButton>
-            )}
-          </>
-        )}
+        <AuthButton />
       </div>
     </div>
   );

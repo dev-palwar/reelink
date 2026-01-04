@@ -9,11 +9,11 @@ import {
 } from "@/controllers/movie";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MovieData, SimilarMovieData } from "./interface";
+import { MovieData, SimilarMovieData } from "../interface";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import Modale from "@/components/reusables/Modale";
 import { Input } from "@/components/ui/input";
 import {
