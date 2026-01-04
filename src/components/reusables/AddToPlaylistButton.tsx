@@ -21,6 +21,8 @@ import { Playlist, PlaylistItem } from "@/generated/prisma/client";
 import Loader from "./Loader";
 import { cn } from "@/lib/utils";
 import { usePlaylistItems } from "@/hooks/usePlaylistItems";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 export default function AddToPlaylistModale({
   movieId,
@@ -65,23 +67,47 @@ export default function AddToPlaylistModale({
   );
 }
 
-function AddToPlaylistForm({ movieId }: { movieId: string }) {
-  const { data: playlistsData, isLoading } = useQuery({
+export function AddToPlaylistForm({ movieId }: { movieId: string }) {
+  const queryClient = useQueryClient();
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+
+  // Fetch playlists
+  const { data: playlists = [], isLoading: isLoadingPlaylists } = useQuery({
     queryKey: ["playlists"],
-    queryFn: () => getUserPlaylists(),
+    queryFn: getUserPlaylists,
   });
 
-  const { mutate: createPlaylistMutation, isPending: createPlaylistPending } =
-    useMutation({
-      mutationFn: (playlistName: string) => createPlaylist(playlistName),
-      // onSuccess: () => toast.success("Playlist created successfully"),
-    });
+  // Fetch playlist items to check which playlists contain this movie
+  const { data: playlistItems = [] } = usePlaylistItems();
 
-  const {
-    mutate: addToPlaylistMutation,
-    isPending: addToPlaylistPending,
-    error: movieAlreadyInPlaylistError,
-  } = useMutation({
+  // Get playlist IDs that contain this movie
+  const playlistsWithMovie = playlistItems
+    .filter((item: PlaylistItem) => item.movieId === movieId)
+    .map((item: PlaylistItem) => item.playlistId);
+
+  // Create playlist mutation
+  const createPlaylistMutation = useMutation({
+    mutationFn: createPlaylist,
+    onSuccess: (newPlaylist) => {
+      // Invalidate and refetch playlists
+      queryClient.invalidateQueries({ queryKey: ["playlists"] });
+
+      toast.success("Playlist created successfully");
+      setNewPlaylistName(""); // Reset form
+
+      // Optionally auto-add movie to new playlist
+      addToPlaylistMutation.mutate({
+        playlistId: newPlaylist.id,
+        movieId,
+      });
+    },
+    onError: () => {
+      toast.error("Failed to create playlist");
+    },
+  });
+
+  // Add to playlist mutation
+  const addToPlaylistMutation = useMutation({
     mutationFn: ({
       playlistId,
       movieId,
@@ -89,17 +115,47 @@ function AddToPlaylistForm({ movieId }: { movieId: string }) {
       playlistId: string;
       movieId: string;
     }) => addToPlaylist(playlistId, movieId),
-    // onSuccess: () => {
-    //   toast.success("Added to playlist successfully");
-    // },
+    onMutate: async ({ playlistId }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["playlist-items"] });
+
+      // Snapshot previous value
+      const previousItems = queryClient.getQueryData(["playlist-items"]);
+
+      // Optimistically update
+      queryClient.setQueryData(
+        ["playlist-items"],
+        (old: PlaylistItem[] = []) => [
+          ...old,
+          {
+            playlistId,
+            movieId,
+            id: "temp-id",
+            userId: "temp",
+            position: 0,
+            addedAt: new Date(),
+          },
+        ]
+      );
+
+      return { previousItems };
+    },
+    onSuccess: () => {
+      // Invalidate to get real data
+      queryClient.invalidateQueries({ queryKey: ["playlist-items"] });
+      toast.success("Added to playlist");
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousItems) {
+        queryClient.setQueryData(["playlist-items"], context.previousItems);
+      }
+      toast.error("Failed to add to playlist");
+    },
   });
 
-  const { data: playlistItemsData } = usePlaylistItems();
-
-  const {
-    mutate: removeFromPlaylistMutation,
-    isPending: removeFromPlaylistPending,
-  } = useMutation({
+  // Remove from playlist mutation
+  const removeFromPlaylistMutation = useMutation({
     mutationFn: ({
       playlistId,
       movieId,
@@ -107,88 +163,158 @@ function AddToPlaylistForm({ movieId }: { movieId: string }) {
       playlistId: string;
       movieId: string;
     }) => removeFromPlaylist(playlistId, movieId),
+    onMutate: async ({ playlistId, movieId }) => {
+      await queryClient.cancelQueries({ queryKey: ["playlist-items"] });
+
+      const previousItems = queryClient.getQueryData(["playlist-items"]);
+
+      // Optimistically remove
+      queryClient.setQueryData(["playlist-items"], (old: PlaylistItem[] = []) =>
+        old.filter(
+          (item) =>
+            !(item.playlistId === playlistId && item.movieId === movieId)
+        )
+      );
+
+      return { previousItems };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["playlist-items"] });
+      toast.success("Removed from playlist");
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(["playlist-items"], context.previousItems);
+      }
+      toast.error("Failed to remove from playlist");
+    },
   });
 
-  if (movieAlreadyInPlaylistError) {
-    // removeFromPlaylistMutation({ playlistId: movieAlreadyInPlaylistError.id, movieId });
-  }
+  // Handle toggle (add or remove)
+  const handleTogglePlaylist = (playlistId: string) => {
+    const isInPlaylist = playlistsWithMovie.includes(playlistId);
 
-  const handleAddOrRemoveMovieFromPlaylist = (
-    movieId: string,
-    playlistId: string
-  ) => {
-    if (matchedPlaylistIds.includes(playlistId)) {
-      removeFromPlaylistMutation({ playlistId, movieId });
+    if (isInPlaylist) {
+      removeFromPlaylistMutation.mutate({ playlistId, movieId });
     } else {
-      addToPlaylistMutation({ playlistId, movieId });
+      addToPlaylistMutation.mutate({ playlistId, movieId });
     }
   };
 
-  const matchedPlaylistIds =
-    playlistItemsData
-      ?.filter((item: PlaylistItem) => item.movieId === movieId)
-      .map((item: PlaylistItem) => item.playlistId) ?? [];
-
-  const handleCreatePlaylist = async (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle create playlist form submission
+  const handleCreatePlaylist = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const playlistName = formData.get("playlistName") as string;
-    if (playlistName.trim() === "") {
+
+    const trimmedName = newPlaylistName.trim();
+
+    if (!trimmedName) {
       toast.error("Playlist name cannot be empty");
       return;
     }
-    if (playlistName.length > 50) {
+
+    if (trimmedName.length > 50) {
       toast.error("Playlist name cannot be longer than 50 characters");
       return;
     }
-    createPlaylistMutation(playlistName);
+
+    // Check for duplicate playlist names
+    const isDuplicate = playlists?.some(
+      (playlist: Playlist) =>
+        playlist.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      toast.error("A playlist with this name already exists");
+      return;
+    }
+
+    createPlaylistMutation.mutate(trimmedName);
   };
 
-  if (isLoading) {
-    return <p>Loading...</p>;
+  const isAnyMutationPending =
+    createPlaylistMutation.isPending ||
+    addToPlaylistMutation.isPending ||
+    removeFromPlaylistMutation.isPending;
+
+  if (isLoadingPlaylists) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader />
+      </div>
+    );
+  }
+
+  if (!playlists?.length && !isLoadingPlaylists) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-muted-foreground text-center py-4">
+          You don't have any playlists yet. Create one below!
+        </p>
+        <form onSubmit={handleCreatePlaylist} className="flex flex-col gap-2">
+          <Input
+            value={newPlaylistName}
+            onChange={(e) => setNewPlaylistName(e.target.value)}
+            placeholder="Enter playlist name"
+            maxLength={50}
+            disabled={isAnyMutationPending}
+          />
+          <Button type="submit" disabled={isAnyMutationPending}>
+            {createPlaylistMutation.isPending ? <Loader /> : "Create playlist"}
+          </Button>
+        </form>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      {playlistsData?.map((playlist: Playlist) => {
-        const isSelected = matchedPlaylistIds.includes(playlist.id);
+      {/* Playlist List */}
+      <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto">
+        {playlists?.map((playlist: Playlist) => {
+          const isInPlaylist = playlistsWithMovie.includes(playlist.id);
+          const isCurrentlyMutating =
+            addToPlaylistMutation.isPending ||
+            removeFromPlaylistMutation.isPending;
 
-        return (
-          <div
-            key={playlist.id}
-            onClick={() =>
-              handleAddOrRemoveMovieFromPlaylist(movieId, playlist.id)
-            }
-            className="flex items-center gap-2 cursor-pointer text-sm font-medium capitalize transition-all duration-300 hover:underline"
-          >
-            <IconRenderer
-              name={isSelected ? "check" : "add-to-watchlist"}
-              className={isSelected ? "text-green-500" : "text-primary"}
-            />
+          return (
+            <button
+              key={playlist.id}
+              onClick={() => handleTogglePlaylist(playlist.id)}
+              disabled={isCurrentlyMutating}
+              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium capitalize transition-all duration-200 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-left"
+            >
+              <IconRenderer
+                name={isInPlaylist ? "check" : "add-to-watchlist"}
+                className={`w-4 h-4 shrink-0 ${
+                  isInPlaylist ? "text-green-500" : "text-muted-foreground"
+                }`}
+              />
+              <span className="text-foreground/90 flex-1">{playlist.name}</span>
+              {isInPlaylist && (
+                <span className="text-xs text-muted-foreground">Added</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-            <p className="text-foreground/70">{playlist.name}</p>
-          </div>
-        );
-      })}
-      <hr />
+      <hr className="my-2" />
+
+      {/* Create Playlist Form */}
       <form onSubmit={handleCreatePlaylist} className="flex flex-col gap-2">
         <Input
-          name="playlistName"
-          placeholder="Enter playlist name"
-          className="w-full"
+          value={newPlaylistName}
+          onChange={(e) => setNewPlaylistName(e.target.value)}
+          placeholder="Create new playlist"
+          maxLength={50}
+          disabled={isAnyMutationPending}
         />
         <Button
           type="submit"
+          disabled={isAnyMutationPending}
           className="w-full"
-          disabled={createPlaylistPending || addToPlaylistPending}
         >
-          {createPlaylistPending ||
-          addToPlaylistPending ||
-          removeFromPlaylistPending ? (
-            <Loader />
-          ) : (
-            "Create playlist"
-          )}
+          {createPlaylistMutation.isPending ? <Loader /> : "Create & Add Movie"}
         </Button>
       </form>
     </div>
