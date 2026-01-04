@@ -2,18 +2,7 @@ import Image from "next/image";
 import { ReelNotFound } from "../../svgs/ReelNotFound";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
-
-export interface ReelCardProps {
-  id: number;
-  title: string;
-  name?: string;
-  original_title: string;
-  backdrop_path: string;
-  first_air_date?: string;
-  media_type: string;
-  release_date?: string;
-  poster_path: string;
-}
+import { ReelCardProps } from "@/types";
 
 export default function ReelCard({ data }: { data: ReelCardProps }) {
   return (
@@ -35,6 +24,9 @@ export default function ReelCard({ data }: { data: ReelCardProps }) {
 
         <div className="hidden group-hover:flex p-4 absolute bottom-0 left-0 w-full h-full bg-background/80 backdrop-blur-sm items-end">
           <div className="flex flex-col gap-2">
+            <p className="text-sm text-foreground/70 font-medium">
+              {data.media_type}
+            </p>
             <p className="text-xl font-medium leading-relaxed">
               {data.title ? data.title : data.name}
             </p>

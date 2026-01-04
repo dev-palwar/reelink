@@ -4,62 +4,63 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import Anya from "@/assets/anya.png";
 import Image from "next/image";
-import ReelCard, { ReelCardProps } from "@/components/reusables/cards/ReelCard";
+import ReelCard from "@/components/reusables/cards/ReelCard";
 import Loader from "@/components/reusables/Loader";
 import { getMultiSearch } from "@/controllers/multi";
-
-interface SearchResults {
-  results: ReelCardProps[];
-  total_pages: number;
-  total_results: number;
-}
+import { useDebounce } from "../../useDebounce";
+import { useQuery } from "@tanstack/react-query";
+import { ReelCardProps } from "@/types";
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    SearchResults["results"] | null
-  >(null);
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
+  const { debouncedValue: debouncedSearchQuery } = useDebounce(
+    searchQuery || "",
+    500
+  );
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      console.log(e.currentTarget.value);
-    }
-  };
-
-  const fetchSearchResults = async () => {
-    setLoading(true);
-    const data: SearchResults = await getMultiSearch(searchQuery);
-    console.log(data.results);
-    setSearchResults(data.results);
-    setLoading(false);
-  };
+  const {
+    data: searchResultsData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["searchResults", debouncedSearchQuery],
+    queryFn: () => getMultiSearch(debouncedSearchQuery || ""),
+  });
 
   useEffect(() => {
-    fetchSearchResults();
-  }, [searchQuery]);
+    const savedSearchQuery = localStorage.getItem("searchQuery");
+    if (savedSearchQuery) {
+      setSearchQuery(savedSearchQuery);
+    } else {
+      localStorage.removeItem("searchQuery");
+    }
+  }, [debouncedSearchQuery]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="min-h-screen flex flex-col gap-8">
       <Input
         placeholder="Search for a movie TV show or Anime"
-        className="w-full bg-black dark:bg-white border-none rounded-none shadow-none p-6 mt-8 text-black"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.currentTarget.value)}
-        onKeyDown={handleSearch}
+        className="w-full bg-black dark:bg-white border-none rounded-none shadow-none p-6 text-black"
+        value={localStorage.getItem("searchQuery") || ""}
+        onChange={(e) => {
+          setSearchQuery(e.currentTarget.value);
+          localStorage.setItem("searchQuery", e.currentTarget.value);
+        }}
       />
 
       {!searchQuery && (
-        <div className="flex justify-center items-center h-screen">
+        <div className="min-h-screen w-full flex justify-center items-center">
           <Image src={Anya} alt="Anya" width={300} height={300} />
         </div>
       )}
 
-      <div className="flex justify-center items-center flex-wrap gap-4">
-        {loading ? (
-          <Loader />
+      <div className="flex items-center flex-wrap gap-4">
+        {isLoading ? (
+          <div className="w-full flex justify-center items-center">
+            <Loader />
+          </div>
         ) : (
-          searchResults?.map((result) => (
+          searchResultsData?.results?.map((result: ReelCardProps) => (
             <div className="basis-48" key={result.id}>
               <ReelCard
                 key={result.id}

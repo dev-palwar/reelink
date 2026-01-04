@@ -1,4 +1,4 @@
-export interface MovieData {
+export interface DiscoverMoviesData {
   id: number;
   adult: boolean;
   runtime: number;

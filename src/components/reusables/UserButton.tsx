@@ -33,9 +33,7 @@ export const AuthButton = () => {
   return (
     <div>
       {!isLoaded || !user ? (
-        <Button variant="outline">
-          <SignInButton />
-        </Button>
+        <SignInButton />
       ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

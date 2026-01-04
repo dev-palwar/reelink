@@ -1,5 +1,6 @@
-import { MovieCreditData, MovieData } from "@/app/movie/interface";
+import { DiscoverMoviesData, MovieCreditData } from "@/app/movie/interface";
 import { apiClient } from "@/lib/api-client";
+import { MovieData } from "@/types";
 
 export const getMovieDetails = async (id: string): Promise<MovieData> => {
   try {
@@ -33,14 +34,16 @@ export const getMovieCredits = async (
   }
 };
 
-export const getDiscoverMovies = async (page: number): Promise<any> => {
+export const getDiscoverMovies = async (
+  page: number
+): Promise<DiscoverMoviesData[]> => {
   try {
     const response = await apiClient.get(`/discover/movie`, {
       params: {
         page: page,
       },
     });
-    return response.data;
+    return response.data.results;
   } catch (error) {
     console.error("Error fetching discover movies:", error);
     throw error;

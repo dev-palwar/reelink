@@ -3,33 +3,24 @@
 import Loader from "@/components/reusables/Loader";
 import ReelCard from "@/components/reusables/cards/ReelCard";
 import { getDiscoverMovies } from "@/controllers/movie";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { DiscoverMoviesData } from "../movie/interface";
+import { MovieData } from "@/types";
 
 export default function Discover() {
-  const [discoverData, setDiscoverData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  const fetchDiscoverData = async () => {
-    setLoading(true);
-    const data = await getDiscoverMovies(1);
-    setDiscoverData(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchDiscoverData();
-  }, []);
-
-  console.log(discoverData);
+  const { data: discoverMoviesData, isLoading } = useQuery({
+    queryKey: ["discoverMovies"],
+    queryFn: () => getDiscoverMovies(1),
+  });
 
   return (
     <div className="flex flex-col gap-8">
       <p className="text-7xl font-bold capitalize">Discover</p>
       <div className="flex flex-wrap gap-4 justify-center items-center">
-        {loading ? (
+        {isLoading ? (
           <Loader />
         ) : (
-          discoverData?.results?.map((result: any) => (
+          discoverMoviesData?.map((result: DiscoverMoviesData) => (
             <div className="basis-48" key={result.id}>
               <ReelCard
                 key={result.id}
