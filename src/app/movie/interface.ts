@@ -1,16 +1,23 @@
-export interface DiscoverMoviesData {
+export interface MovieData {
   id: number;
-  adult: boolean;
-  runtime: number;
   title: string;
   original_title: string;
   backdrop_path: string;
   release_date: string;
   poster_path: string;
+  first_air_date?: string;
+  media_type: string;
   vote_average: number;
-  imdb_id: string;
-  original_language: string;
+  genres: {
+    id: number;
+    name: string;
+  }[];
   overview: string;
+  runtime: number;
+  spoken_languages: {
+    iso_639_1: string;
+    name: string;
+  }[];
   production_companies: {
     id: number;
     name: string;
@@ -23,14 +30,9 @@ export interface DiscoverMoviesData {
     english_name: string;
   }[];
   status: string;
-  spoken_languages: {
-    iso_639_1: string;
-    name: string;
-  }[];
-  genres: {
-    id: number;
-    name: string;
-  }[];
+  tagline: string;
+  imdb_id: string;
+  original_language: string;
 }
 
 export interface SimilarMovieData {

@@ -1,5 +1,7 @@
 import { PlaylistData } from "@/app/playlists/interface";
+import { Playlist } from "@/generated/prisma/client";
 import { authApiClient } from "@/lib/api-client";
+import { AxiosError } from "axios";
 
 export const createPlaylist = async (name: string) => {
   try {
@@ -8,19 +10,20 @@ export const createPlaylist = async (name: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error creating playlist:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
-export const getPlaylists = async () => {
+export const getUserPlaylists = async (): Promise<Playlist[] | null> => {
   try {
     const response = await authApiClient.get("/api/playlist/all");
-    console.log(response.data);
     return response.data;
   } catch (error) {
-    console.error("Error fetching playlists:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
@@ -32,21 +35,23 @@ export const addToPlaylist = async (playlistId: string, movieId: string) => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error adding to playlist:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
-export const getPlaylist = async (id: string): Promise<PlaylistData> => {
+export const getPlaylist = async (
+  playlistId: string
+): Promise<PlaylistData> => {
   try {
-    const response = await authApiClient.get("/api/playlist/get", {
-      params: {
-        id,
-      },
+    const response = await authApiClient.post("/api/playlist/get", {
+      playlistId,
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching playlist:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };

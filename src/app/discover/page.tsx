@@ -4,8 +4,7 @@ import Loader from "@/components/reusables/Loader";
 import ReelCard from "@/components/reusables/cards/ReelCard";
 import { getDiscoverMovies } from "@/controllers/movie";
 import { useQuery } from "@tanstack/react-query";
-import { DiscoverMoviesData } from "../movie/interface";
-import { MovieData } from "@/types";
+import { DiscoverMoviesData } from "./interface";
 
 export default function Discover() {
   const { data: discoverMoviesData, isLoading } = useQuery({

@@ -1,61 +1,35 @@
 import prisma from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/helpers/middleware";
+import { createPlaylistSchema } from "@/lib/api/validators/playlist";
 
-export async function POST(req: Request) {
-  const { playlistName } = await req.json();
-  const clerkUser = await currentUser();
+export const POST = withAuth(async (req, { clerkUser, dbUser, body }) => {
+  const { playlistName } = body!;
 
-  if (!clerkUser)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Sync Clerk user with database
-  // Sync Clerk user with database
-  const user = await prisma.user.upsert({
-    where: {
-      clerkId: clerkUser.id, // Match on clerkId
-    },
-    update: {
-      email: clerkUser.emailAddresses[0]?.emailAddress || "",
-      name: clerkUser.firstName
-        ? `${clerkUser.firstName} ${clerkUser.lastName || ""}`.trim()
-        : null,
-      image: clerkUser.imageUrl,
-    },
-    create: {
-      clerkId: clerkUser.id, // Store Clerk's ID in clerkId field
-      email: clerkUser.emailAddresses[0]?.emailAddress || "",
-      name: clerkUser.firstName
-        ? `${clerkUser.firstName} ${clerkUser.lastName || ""}`.trim()
-        : null,
-      image: clerkUser.imageUrl,
-    },
-  });
-
-  // Check if playlist already exists
+  // Checks if playlist already exists
   const existingPlaylist = await prisma.playlist.findFirst({
     where: {
-      userId: user.id,
+      userId: dbUser.id,
       name: playlistName,
     },
   });
 
   if (existingPlaylist) {
     return NextResponse.json(
-      { error: "Playlist already exists" },
-      { status: 400 }
+      { error: "Playlist with this name already exists" },
+      { status: 409 } // 409 Conflict is more appropriate than 400
     );
   }
 
-  // Create new playlist
+  // Creates new playlist
   const newPlaylist = await prisma.playlist.create({
     data: {
       name: playlistName,
-      userId: user.id,
+      userId: dbUser.id,
       isDefault: false,
       isPublic: false,
     },
   });
 
-  return NextResponse.json(newPlaylist);
-}
+  return NextResponse.json(newPlaylist, { status: 201 });
+}, createPlaylistSchema);

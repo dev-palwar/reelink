@@ -3,6 +3,7 @@ import { AiFillFire, AiOutlineFire } from "react-icons/ai";
 import { AiOutlineHeart } from "react-icons/ai";
 import { FaImdb } from "react-icons/fa";
 import { IoAddCircleOutline } from "react-icons/io5";
+import { IoCheckmarkCircleOutline } from "react-icons/io5";
 
 interface IconRendererProps {
   name: string;
@@ -23,6 +24,8 @@ export default function IconRenderer({ name, className }: IconRendererProps) {
       return <FaImdb size={30} className={className} />;
     case "add-to-watchlist":
       return <IoAddCircleOutline size={30} className={className} />;
+    case "check":
+      return <IoCheckmarkCircleOutline size={30} className={className} />;
     default:
       return null;
   }

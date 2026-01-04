@@ -7,7 +7,7 @@ import Image from "next/image";
 import ReelCard from "@/components/reusables/cards/ReelCard";
 import Loader from "@/components/reusables/Loader";
 import { getMultiSearch } from "@/controllers/multi";
-import { useDebounce } from "../../useDebounce";
+import { useDebounce } from "../hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { ReelCardProps } from "@/types";
 

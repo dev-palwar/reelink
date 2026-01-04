@@ -1,42 +1,54 @@
 import prisma from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api/helpers/middleware";
+import { z } from "zod";
 
-export async function POST(req: Request) {
-  const { playlistId, movieId } = await req.json();
-  const clerkUser = await currentUser();
+const addToPlaylistSchema = z.object({
+  playlistId: z.string().min(1, "Playlist ID is required"),
+  movieId: z.string().min(1, "Movie ID is required"),
+});
 
-  if (!clerkUser) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const POST = withAuth(async (req, context) => {
+  const { playlistId, movieId } = context.body!;
 
-  // Find the database user using clerkId
-  const user = await prisma.user.findUnique({
-    where: {
-      clerkId: clerkUser.id,
-    },
+  // Checks if playlist exists
+  const playlist = await prisma.playlist.findUnique({
+    where: { id: playlistId },
   });
 
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (!playlist) {
+    return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
   }
 
-  // Get the current max position in the playlist
-  const maxPosition = await prisma.playlistItem.findFirst({
-    where: { playlistId },
-    orderBy: { position: "desc" },
-    select: { position: true },
+  // Checks if user has access to playlist
+  if (playlist.userId !== context.dbUser.id) {
+    return NextResponse.json(
+      { error: "You don't have permission to modify this playlist" },
+      { status: 403 }
+    );
+  }
+
+  // Checks if movie already exists in playlist
+  const existingItem = await prisma.playlistItem.findUnique({
+    where: { playlistId_movieId: { playlistId, movieId } },
   });
 
+  if (existingItem) {
+    return NextResponse.json(
+      { error: "Movie already exists in this playlist" },
+      { status: 409 }
+    );
+  }
+
+  // Creates new playlist item
   const playlistItem = await prisma.playlistItem.create({
     data: {
       playlistId,
       movieId,
-      userId: user.id, // Use database user's id
-      position: (maxPosition?.position ?? -1) + 1, // Add to end of playlist
-      // addedAt is automatic with @default(now())
+      userId: context.dbUser.id,
+      position: 0 as number,
     },
   });
 
-  return NextResponse.json(playlistItem);
-}
+  return NextResponse.json(playlistItem, { status: 201 });
+}, addToPlaylistSchema);

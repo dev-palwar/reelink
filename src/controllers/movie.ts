@@ -1,14 +1,17 @@
-import { DiscoverMoviesData, MovieCreditData } from "@/app/movie/interface";
+import { DiscoverMoviesData } from "@/app/discover/interface";
+import { MovieCreditData } from "@/app/movie/interface";
 import { apiClient } from "@/lib/api-client";
-import { MovieData } from "@/types";
+import { MovieData } from "@/app/movie/interface";
+import { AxiosError } from "axios";
 
 export const getMovieDetails = async (id: string): Promise<MovieData> => {
   try {
     const response = await apiClient.get(`/movie/${id}`);
     return response.data;
   } catch (error) {
-    console.error("Error fetching movie details:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
@@ -17,8 +20,9 @@ export const getSimilarMovies = async (id: string) => {
     const response = await apiClient.get(`/movie/${id}/similar`);
     return response.data;
   } catch (error) {
-    console.error("Error fetching similar movies:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
@@ -29,8 +33,9 @@ export const getMovieCredits = async (
     const response = await apiClient.get(`/movie/${id}/credits`);
     return response.data.cast;
   } catch (error) {
-    console.error("Error fetching movie credits:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
 
@@ -45,7 +50,8 @@ export const getDiscoverMovies = async (
     });
     return response.data.results;
   } catch (error) {
-    console.error("Error fetching discover movies:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };

@@ -3,24 +3,41 @@
 import IconRenderer from "@/components/reusables/IconRenderer";
 import Image from "next/image";
 import { getMovieDetails } from "@/controllers/movie";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/api/helpers";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import AddToPlaylistModale from "@/components/reusables/Modale";
+import AddToPlaylistModale from "@/components/reusables/AddToPlaylistButton";
 import Loader from "@/components/reusables/Loader";
+import { usePlaylistItems } from "@/hooks/usePlaylistItems";
+import { useEffect, useState } from "react";
+import { PlaylistItem } from "@/app/playlists/interface";
 
 export default function MoviePage() {
   const { id } = useParams<{ id: string }>();
+
+  const { data: playlistItems } = usePlaylistItems();
+
+  const [isInPlaylist, setIsInPlaylist] = useState(false);
 
   const { data: movieData, isLoading } = useQuery({
     queryKey: ["movie", id],
     queryFn: () => getMovieDetails(id || ""),
   });
 
+  useEffect(() => {
+    if (playlistItems) {
+      setIsInPlaylist(
+        playlistItems.some((item: PlaylistItem) => item.movieId === id)
+      );
+    }
+  }, [playlistItems, id]);
+
   return (
     <div className="min-h-screen flex flex-col gap-8">
       {isLoading ? (
-        <Loader />
+        <div className="flex justify-center items-center h-full">
+          <Loader />
+        </div>
       ) : (
         <div className="flex justify-between">
           <div className="content flex flex-col gap-8 basis-1/2">
@@ -55,7 +72,10 @@ export default function MoviePage() {
                   {movieData?.vote_average || 0}/10
                 </p>
               </div>
-              <AddToPlaylistModale movieId={movieData?.id?.toString() || ""} />
+              <AddToPlaylistModale
+                movieId={movieData?.id?.toString() || ""}
+                isInPlaylist={isInPlaylist}
+              />
             </div>
 
             <div className="generes flex items-center gap-2">

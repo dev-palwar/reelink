@@ -6,33 +6,27 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { PlaylistData, PlaylistItem } from "../interface";
 import { MovieData } from "@/app/movie/interface";
-import { Loader } from "lucide-react";
+import Loader from "@/components/reusables/Loader";
 import { getMovieDetails } from "@/controllers/movie";
-import Image from "next/image";
 import ReelCard from "@/components/reusables/cards/ReelCard";
+import { useQuery } from "@tanstack/react-query";
 
 export default function PlaylistPage() {
   const { id } = useParams<{ id: string }>();
-  const [playlist, setPlaylist] = useState<PlaylistData | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const getPlaylistItems = async () => {
-    setLoading(true);
-    const playlist = await getPlaylist(id);
-    setLoading(false);
-    setPlaylist(playlist);
-  };
-
-  useEffect(() => {
-    getPlaylistItems();
-  }, [id]);
+  const { data: playlistDetails, isLoading } = useQuery({
+    queryKey: ["playlist-details", id],
+    queryFn: () => getPlaylist(id || ""),
+  });
 
   return (
     <div className="min-h-screen flex flex-col gap-8">
-      {loading ? (
-        <Loader />
+      {isLoading ? (
+        <div className="w-full min-h-screen flex justify-center items-center">
+          <Loader />
+        </div>
       ) : (
-        playlist && <PlaylistDetails playlist={playlist} />
+        playlistDetails && <PlaylistDetails playlist={playlistDetails} />
       )}
     </div>
   );
@@ -62,7 +56,9 @@ const PlaylistDetails = ({ playlist }: { playlist: PlaylistData | null }) => {
       <h1 className="text-4xl font-bold capitalize">{playlist?.name}</h1>
       <div className="flex flex-wrap gap-4">
         {loading ? (
-          <Loader />
+          <div className="w-full min-h-screen flex justify-center items-center">
+            <Loader />
+          </div>
         ) : movies.length > 0 ? (
           movies.map((movie: MovieData) => (
             <ReelCard
@@ -79,7 +75,9 @@ const PlaylistDetails = ({ playlist }: { playlist: PlaylistData | null }) => {
             />
           ))
         ) : (
-          <p>No data found</p>
+          <div className="w-full min-h-screen flex justify-center items-center">
+            <p>No data found</p>
+          </div>
         )}
       </div>
     </div>

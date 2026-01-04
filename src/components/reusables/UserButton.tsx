@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import Modale from "./Modale";
+import Modale from "./AddToPlaylistButton";
 import {
   Dialog,
   DialogContent,

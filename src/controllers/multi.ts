@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api-client";
 import { ReelCardProps } from "@/types";
+import { AxiosError } from "axios";
 
 export interface SearchResults {
   results: ReelCardProps[];
@@ -16,7 +17,8 @@ export const getMultiSearch = async (query: string): Promise<SearchResults> => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error fetching multi search:", error);
-    throw error;
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
   }
 };
