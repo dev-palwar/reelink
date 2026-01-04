@@ -17,22 +17,30 @@ export const authApiClient = axios.create({
 });
 
 authApiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.status === 201 || response.status === 200) {
+      toast.success("Operation successful");
+    }
+    return response;
+  },
   (error) => {
-    const errorDetails = {
-      timestamp: new Date().toISOString(),
+    console.error("[API Error]", {
       url: error.config?.url,
-      method: error.config?.method?.toUpperCase(),
+      method: error.config?.method,
       status: error.response?.status,
       message: error.response?.data?.error || error.message,
-      details: error.response?.data?.details,
-    };
-
-    toast.error("Error fetching playlist details", {
-      description: errorDetails.message,
     });
 
-    console.log(errorDetails);
+    const message =
+      error.response?.data?.error || "Something went wrong. Please try again.";
+
+    const title = error.response?.status
+      ? `Error ${error.response.status}`
+      : "Request Failed";
+
+    toast.error(title, {
+      description: message,
+    });
 
     return Promise.reject(error);
   }

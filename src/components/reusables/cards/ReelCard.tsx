@@ -22,7 +22,7 @@ export default function ReelCard({ data }: { data: ReelCardProps }) {
           </div>
         )}
 
-        <div className="hidden group-hover:flex p-4 absolute bottom-0 left-0 w-full h-full bg-background/80 backdrop-blur-sm items-end">
+        <div className="hidden group-hover:flex p-4 absolute bottom-0 left-0 w-full h-full  bg-linear-to-t from-black via-black/40 to-transparent backdrop-blur-xs items-end ">
           <div className="flex flex-col gap-2">
             <p className="text-sm text-foreground/70 font-medium">
               {data.media_type}

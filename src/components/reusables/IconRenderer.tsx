@@ -4,6 +4,7 @@ import { AiOutlineHeart } from "react-icons/ai";
 import { FaImdb } from "react-icons/fa";
 import { IoAddCircleOutline } from "react-icons/io5";
 import { IoCheckmarkCircleOutline } from "react-icons/io5";
+import { IoRemoveCircleOutline } from "react-icons/io5";
 
 interface IconRendererProps {
   name: string;
@@ -26,6 +27,8 @@ export default function IconRenderer({ name, className }: IconRendererProps) {
       return <IoAddCircleOutline size={30} className={className} />;
     case "check":
       return <IoCheckmarkCircleOutline size={30} className={className} />;
+    case "remove":
+      return <IoRemoveCircleOutline size={30} className={className} />;
     default:
       return null;
   }

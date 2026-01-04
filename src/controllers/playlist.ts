@@ -55,3 +55,20 @@ export const getPlaylist = async (
     );
   }
 };
+
+export const removeFromPlaylist = async (
+  playlistId: string,
+  movieId: string
+) => {
+  try {
+    const response = await authApiClient.post("/api/playlist/items/remove", {
+      playlistId,
+      movieId,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      (error as AxiosError<{ error: string }>)?.response?.data?.error
+    );
+  }
+};
